@@ -4,6 +4,7 @@ using System.Linq;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Screens.Helpers;
 using Sandbox.ModAPI;
+using SpaceEngineers.Game.Entities.Blocks.SafeZone;
 using Torch.Commands;
 using VRage.Game.ModAPI;
 
@@ -22,7 +23,7 @@ namespace N1ShittyCommands.Commands
                 Context.Respond("No safe zone found");
                 return;
             }
-            var safeZoneList = string.Join("\n", safeZones.Select(x => x.DisplayName));
+            var safeZoneList = string.Join("\n", safeZones.Select(x => $"{x.DisplayName}({x.EntityId})"));
 
             Context.Respond(safeZoneList);
         }
@@ -36,7 +37,7 @@ namespace N1ShittyCommands.Commands
                 Context.Respond("command cannot be use in this method.");
                 return;
             }
-            var safeZones = new HashSet<MySafeZone>(MyEntities.GetEntities().OfType<MySafeZone>());
+            var safeZones = new HashSet<MySafeZone>(MySessionComponentSafeZones.SafeZones);
 
             
             if (safeZones.Count == 0)
@@ -59,7 +60,7 @@ namespace N1ShittyCommands.Commands
         [Command("clear", "removes empty safezones")]
         public void RemoveSafeZones()
         {
-            var safeZones = new HashSet<MySafeZone>(MyEntities.GetEntities().OfType<MySafeZone>());
+            var safeZones = new HashSet<MySafeZone>(MySessionComponentSafeZones.SafeZones);
 
             var removed = 0;
             foreach (var safeZone in safeZones)
@@ -80,7 +81,19 @@ namespace N1ShittyCommands.Commands
                 Context.Respond("Provide a name of target safe zone to delete");
                 return;
             }
-            var safeZones = new HashSet<MySafeZone>(MyEntities.GetEntities().OfType<MySafeZone>());
+            var safeZones = new HashSet<MySafeZone>(MySessionComponentSafeZones.SafeZones);
+            if (long.TryParse(name, out var id))
+            {
+                var target = safeZones.FirstOrDefault(x => x.EntityId == id);
+                if (target == null)
+                {
+                    Context.Respond($"no safe zone containing Id {name} found");
+                    return;
+                }
+                target.Close();
+                Context.Respond("Removed 1 safe zone");
+                return;
+            }
             var removed = 0;
             foreach (var safeZone in safeZones)
             {

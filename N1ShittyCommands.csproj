@@ -37,16 +37,16 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="NLog">
-      <HintPath>D:\Sync\ProgramFiles\VisualStudio\source\repos\TorchBinaries\NLog.dll</HintPath>
+      <HintPath>..\TorchBinaries\NLog.dll</HintPath>
     </Reference>
     <Reference Include="Sandbox.Common">
-      <HintPath>D:\Sync\ProgramFiles\VisualStudio\source\repos\GameBinaries\Sandbox.Common.dll</HintPath>
+      <HintPath>..\GameBinaries\Sandbox.Common.dll</HintPath>
     </Reference>
     <Reference Include="Sandbox.Game">
-      <HintPath>D:\Sync\ProgramFiles\VisualStudio\source\repos\GameBinaries\Sandbox.Game.dll</HintPath>
+      <HintPath>..\GameBinaries\Sandbox.Game.dll</HintPath>
     </Reference>
     <Reference Include="SpaceEngineers.Game">
-      <HintPath>D:\Sync\ProgramFiles\VisualStudio\source\repos\GameBinaries\SpaceEngineers.Game.dll</HintPath>
+      <HintPath>..\GameBinaries\SpaceEngineers.Game.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -57,31 +57,34 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="Torch">
-      <HintPath>D:\Sync\ProgramFiles\VisualStudio\source\repos\TorchBinaries\Torch.dll</HintPath>
+      <HintPath>..\TorchBinaries\Torch.dll</HintPath>
     </Reference>
     <Reference Include="Torch.API">
-      <HintPath>D:\Sync\ProgramFiles\VisualStudio\source\repos\TorchBinaries\Torch.API.dll</HintPath>
+      <HintPath>..\TorchBinaries\Torch.API.dll</HintPath>
     </Reference>
     <Reference Include="VRage">
-      <HintPath>D:\Sync\ProgramFiles\VisualStudio\source\repos\GameBinaries\VRage.dll</HintPath>
+      <HintPath>..\GameBinaries\VRage.dll</HintPath>
     </Reference>
     <Reference Include="VRage.Game">
-      <HintPath>D:\Sync\ProgramFiles\VisualStudio\source\repos\GameBinaries\VRage.Game.dll</HintPath>
+      <HintPath>..\GameBinaries\VRage.Game.dll</HintPath>
     </Reference>
     <Reference Include="VRage.Library">
-      <HintPath>D:\Sync\ProgramFiles\VisualStudio\source\repos\GameBinaries\VRage.Library.dll</HintPath>
+      <HintPath>..\GameBinaries\VRage.Library.dll</HintPath>
     </Reference>
     <Reference Include="VRage.Math">
-      <HintPath>D:\Sync\ProgramFiles\VisualStudio\source\repos\GameBinaries\VRage.Math.dll</HintPath>
+      <HintPath>..\GameBinaries\VRage.Math.dll</HintPath>
     </Reference>
     <Reference Include="VRage.Network">
-      <HintPath>D:\Sync\ProgramFiles\VisualStudio\source\repos\GameBinaries\VRage.Network.dll</HintPath>
+      <HintPath>..\GameBinaries\VRage.Network.dll</HintPath>
     </Reference>
     <Reference Include="VRage.Scripting">
-      <HintPath>D:\Sync\ProgramFiles\VisualStudio\source\repos\GameBinaries\VRage.Scripting.dll</HintPath>
+      <HintPath>..\GameBinaries\VRage.Scripting.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\PlayerModule.cs" />
+    <Compile Include="Commands\SessionData.cs" />
+    <Compile Include="Commands\Voxels.cs" />
     <Compile Include="Commands\Economy.cs" />
     <Compile Include="Commands\Reputation.cs" />
     <Compile Include="Commands\SafeZone.cs" />

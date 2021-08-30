@@ -2,11 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Multiplayer;
 using Sandbox.Game.SessionComponents;
 using Sandbox.Game.World;
+using Sandbox.Game.World.Generator;
 using Sandbox.ModAPI;
 using Torch.Commands;
 using Torch.Commands.Permissions;
@@ -28,15 +31,13 @@ namespace N1ShittyCommands.Commands
         [ReflectedSetter(Name = nameof(MySessionComponentEconomy.GenerateFactionsOnStart), Type = typeof(MySessionComponentEconomy))]
         private static Action<MySessionComponentEconomy, bool> _genFacOnStart;
 
-        [ReflectedGetter(Name = nameof(MySessionComponentEconomy.GenerateFactionsOnStart), Type = typeof(MySessionComponentEconomy))]
-        private static Func<MySessionComponentEconomy, bool> _wat;
 
-        [Command("reset tradestations")]
+        [Command("reset faction", "removes all current NPC trade factions and their station and allow new factions/stations to spawn")]
         [Permission(MyPromoteLevel.Admin)]
-        public void EconomyReset()
+        public void EconomyFactionReset(string factionTag = null)
         {
             var meh = MySession.Static.GetComponent<MySessionComponentEconomy>();
-            
+
             if (meh == null)
             {
                 Context.Respond("Can't find MySessionComponentEconomy");
@@ -44,10 +45,15 @@ namespace N1ShittyCommands.Commands
             }
 
             var factionList = MySession.Static.Factions.Select(x => x.Value).ToList();
+            if (!string.IsNullOrEmpty(factionTag))
+                factionList.RemoveAll(x => !x.Tag.Equals(factionTag, StringComparison.OrdinalIgnoreCase));
+            var removeList = new List<MyFaction>();
 
             foreach (var faction in factionList)
             {
                 if (!faction.IsEveryoneNpc() || faction.FactionType == MyFactionTypes.PlayerMade || faction.FactionType == MyFactionTypes.None) continue;
+
+
                 foreach (var station in faction.Stations)
                 {
                     MyEntities.TryGetEntityById(station.StationEntityId, out var entity);
@@ -55,29 +61,92 @@ namespace N1ShittyCommands.Commands
                         entity.Close();
                     meh.RemoveStationGrid(station.Id);
                     meh.RemoveStationGrid(station.StationEntityId);
-
                 }
+
+
+                removeList.Add(faction);
+            }
+
+            var removedFactions = 0;
+
+            foreach (var faction in removeList)
+            {
+                removedFactions++;
                 RemoveFaction(faction);
             }
 
             CleanupReputations();
 
-            _genFacOnStart.Invoke(meh,true);
-            _genFacOnStart.Invoke(meh,true);
-            meh.BeforeStart();
-            var safeZones = new HashSet<MySafeZone>(MyEntities.GetEntities().OfType<MySafeZone>());
+            _genFacOnStart.Invoke(meh, true);
+            var safeZones = new HashSet<MySafeZone>(MySessionComponentSafeZones.SafeZones);
 
-            var removed = 0;
-            foreach (var safeZone in safeZones)
+            Task.Run((() =>
             {
-                if (!safeZone.IsEmpty()) continue;
-                safeZone.Close();
-                removed++;
+                Thread.Sleep(100);
+                foreach (var safeZone in safeZones)
+                {
+                    if (!safeZone.IsEmpty()) continue;
+                    safeZone.Close();
+                }
+            }));
+            meh.BeforeStart();
+            Context.Respond($"Cleared {removedFactions} factions \n Faction reset complete");
+        }
+
+
+        [Command("reset station", "removes all NPC trade stations and reset faction to spawn new ones.  This will also increase NPC factions if maxfactioncount is set to 0 in world setting")]
+        [Permission(MyPromoteLevel.Admin)]
+        public void StationReset(string factionTag = null)
+        {
+            var meh = MySession.Static.GetComponent<MySessionComponentEconomy>();
+
+            if (meh == null)
+            {
+                Context.Respond("Can't find MySessionComponentEconomy");
+                return;
             }
 
-            Context.Respond($"Cleared {removed} safezone");
+            var factionList = MySession.Static.Factions.Select(x => x.Value).ToList();
+            if (!string.IsNullOrEmpty(factionTag))
+                factionList.RemoveAll(x => x.Tag.Equals(factionTag, StringComparison.OrdinalIgnoreCase));
 
-            Context.Respond("Economy reset complete");
+            var removedStations = 0;
+            var removeStationList = new List<MyFaction>();
+            foreach (var faction in factionList)
+            {
+                if (!faction.IsEveryoneNpc() || faction.FactionType == MyFactionTypes.PlayerMade || faction.FactionType == MyFactionTypes.None) continue;
+
+                foreach (var station in faction.Stations)
+                {
+                    MyEntities.TryGetEntityById(station.StationEntityId, out var entity);
+                    meh.RemoveStationGrid(station.Id);
+                    meh.RemoveStationGrid(station.StationEntityId);
+                    entity?.Close();
+                    removeStationList.Add(faction);
+                    removedStations++;
+                }
+            }
+
+            RemoveStation(removeStationList);
+            CleanupReputations();
+
+            _genFacOnStart.Invoke(meh, true);
+            var safeZones = new HashSet<MySafeZone>(MySessionComponentSafeZones.SafeZones);
+
+            Task.Run((() =>
+            {
+                Thread.Sleep(100);
+                foreach (var safeZone in safeZones)
+                {
+                    if (!safeZone.IsEmpty()) continue;
+                    safeZone.Close();
+                }
+            }));
+
+            meh.BeforeStart();
+
+            Context.Respond($"Cleared {removedStations} stations \n Station reset complete");
+
         }
 
 
@@ -163,6 +232,21 @@ namespace N1ShittyCommands.Commands
             
 
             return result;
+        }
+
+        [ReflectedGetter(Name = "m_stations", Type = typeof(MyFaction))]
+        private static Func<MyFaction, Dictionary<long, MyStation>> _stations;
+
+        private void RemoveStation(List<MyFaction> removeStationList)
+        {
+            var factionList = MySession.Static.Factions.Select(x => x.Value).ToList();
+
+            foreach (var faction in factionList)
+            { 
+                if (!removeStationList.Contains(faction)) continue;
+                 _stations(faction).Clear();
+            }
+
         }
 
     }
