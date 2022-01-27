@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Screens.Helpers;
+using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.Entities.Blocks.SafeZone;
 using Torch.Commands;
+using VRage.Game;
+using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRageMath;
 
 namespace N1ShittyCommands.Commands
 {
@@ -61,11 +65,22 @@ namespace N1ShittyCommands.Commands
         public void RemoveSafeZones()
         {
             var safeZones = new HashSet<MySafeZone>(MySessionComponentSafeZones.SafeZones);
+            //Blame the shittiness of this code on keen for having a shitty empty bool.
+            var allGrids = new List<MyEntity>(MyEntities.GetEntities().OfType<MyCubeGrid>());
+            var occupiedSpace = new List<MyOrientedBoundingBoxD>();
+            foreach (var entity in allGrids)
+            {
+                occupiedSpace.Add(new MyOrientedBoundingBoxD(entity.PositionComp.LocalAABB,
+                    entity.PositionComp.WorldMatrixRef));
+            }
 
             var removed = 0;
             foreach (var safeZone in safeZones)
             {
-                if (!safeZone.IsEmpty()) continue;
+                var zonePosition =
+                    new MyOrientedBoundingBoxD(safeZone.PositionComp.LocalAABB, safeZone.PositionComp.WorldMatrixRef);
+
+                if (!safeZone.IsEmpty() || (occupiedSpace.Count > 0 && occupiedSpace.Any(x=>x.Intersects(ref zonePosition))) ) continue;
                 safeZone.Close();
                 removed++;
             }

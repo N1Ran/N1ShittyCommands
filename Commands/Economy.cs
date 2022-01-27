@@ -18,6 +18,7 @@ using Torch.Utils;
 using VRage.Game;
 using VRage.Game.Definitions.SessionComponents;
 using VRage.Game.ModAPI;
+using VRageMath;
 
 namespace N1ShittyCommands.Commands
 {
@@ -47,48 +48,14 @@ namespace N1ShittyCommands.Commands
             var factionList = MySession.Static.Factions.Select(x => x.Value).ToList();
             if (!string.IsNullOrEmpty(factionTag))
                 factionList.RemoveAll(x => !x.Tag.Equals(factionTag, StringComparison.OrdinalIgnoreCase));
-            var removeList = new List<MyFaction>();
+            var removeList = new List<MyFaction>(factionList.Where(faction => faction.IsEveryoneNpc() && faction.FactionType != MyFactionTypes.PlayerMade && faction.FactionType != MyFactionTypes.None));
 
-            foreach (var faction in factionList)
-            {
-                if (!faction.IsEveryoneNpc() || faction.FactionType == MyFactionTypes.PlayerMade || faction.FactionType == MyFactionTypes.None) continue;
-
-
-                foreach (var station in faction.Stations)
-                {
-                    MyEntities.TryGetEntityById(station.StationEntityId, out var entity);
-                    if (entity is MySafeZone || entity is MyCubeGrid)
-                        entity.Close();
-                    meh.RemoveStationGrid(station.Id);
-                    meh.RemoveStationGrid(station.StationEntityId);
-                }
-
-
-                removeList.Add(faction);
-            }
-
-            var removedFactions = 0;
-
-            foreach (var faction in removeList)
-            {
-                removedFactions++;
-                RemoveFaction(faction);
-            }
+            var removedFactions = removeList.Count;
+            RemoveStations(meh,removeList,true);
 
             CleanupReputations();
 
             _genFacOnStart.Invoke(meh, true);
-            var safeZones = new HashSet<MySafeZone>(MySessionComponentSafeZones.SafeZones);
-
-            Task.Run((() =>
-            {
-                Thread.Sleep(100);
-                foreach (var safeZone in safeZones)
-                {
-                    if (!safeZone.IsEmpty()) continue;
-                    safeZone.Close();
-                }
-            }));
             meh.BeforeStart();
             Context.Respond($"Cleared {removedFactions} factions \n Faction reset complete");
         }
@@ -111,17 +78,53 @@ namespace N1ShittyCommands.Commands
                 factionList.RemoveAll(x => x.Tag.Equals(factionTag, StringComparison.OrdinalIgnoreCase));
 
             var removedStations = 0;
+            var removeStationList = new List<MyFaction>(factionList.Where(faction => faction.IsEveryoneNpc() && faction.FactionType != MyFactionTypes.PlayerMade && faction.FactionType != MyFactionTypes.None));
+
+            removedStations = RemoveStations(meh, removeStationList);
+
+            _genFacOnStart.Invoke(meh, true);
+            meh.BeforeStart();
+            Task.Run(() =>
+            {
+                Thread.Sleep(100);
+                var newFactionCreated = new List<MyFaction>();
+                foreach (var (id, faction) in MySession.Static.Factions)
+                {
+                    if (removeStationList.Contains(faction)) continue;
+                    newFactionCreated.Add(faction);
+                }
+                foreach (var faction in newFactionCreated)
+                {
+                    RemoveFaction(faction);
+                }
+                
+                
+            });
+            Context.Respond($"Cleared {removedStations} stations \n Station reset complete");
+
+        }
+
+
+        private static int RemoveStations(MySessionComponentEconomy meh,List<MyFaction> factionList, bool deleteFaction = false)
+        {
+            var removedStations = 0;
             var removeStationList = new List<MyFaction>();
+            var deletedStationPositions = new List<MyOrientedBoundingBoxD>();
+
             foreach (var faction in factionList)
             {
-                if (!faction.IsEveryoneNpc() || faction.FactionType == MyFactionTypes.PlayerMade || faction.FactionType == MyFactionTypes.None) continue;
-
+                
                 foreach (var station in faction.Stations)
                 {
                     MyEntities.TryGetEntityById(station.StationEntityId, out var entity);
+                    if (entity != null)
+                    {
+                        deletedStationPositions.Add(new MyOrientedBoundingBoxD(entity.PositionComp.LocalAABB, entity.PositionComp.WorldMatrixRef));
+                        entity.Close();
+                    }
+
                     meh.RemoveStationGrid(station.Id);
                     meh.RemoveStationGrid(station.StationEntityId);
-                    entity?.Close();
                     removeStationList.Add(faction);
                     removedStations++;
                 }
@@ -130,25 +133,34 @@ namespace N1ShittyCommands.Commands
             RemoveStation(removeStationList);
             CleanupReputations();
 
-            _genFacOnStart.Invoke(meh, true);
             var safeZones = new HashSet<MySafeZone>(MySessionComponentSafeZones.SafeZones);
-
-            Task.Run((() =>
+            var delSafeZones = new List<MySafeZone>();
+            foreach (var zone in safeZones)
             {
-                Thread.Sleep(100);
-                foreach (var safeZone in safeZones)
+                var zonePosition =
+                    new MyOrientedBoundingBoxD(zone.PositionComp.LocalAABB, zone.PositionComp.WorldMatrixRef);
+
+                foreach (var position in deletedStationPositions)
                 {
-                    if (!safeZone.IsEmpty()) continue;
-                    safeZone.Close();
+                    if (!position.Intersects(ref zonePosition)) continue;
+                    delSafeZones.Add(zone);
+                    break;
                 }
-            }));
+            }
 
-            meh.BeforeStart();
+            foreach (var zone in delSafeZones)
+            {
+                zone.Close();
+            }
 
-            Context.Respond($"Cleared {removedStations} stations \n Station reset complete");
+            if (!deleteFaction) return removedStations;
 
+            foreach (var faction in factionList)
+            {
+                RemoveFaction(faction);
+            }
+            return removedStations;
         }
-
 
         private static MethodInfo _factionChangeSuccessInfo = typeof(MyFactionCollection).GetMethod("FactionStateChangeSuccess", BindingFlags.NonPublic | BindingFlags.Static);
 
@@ -237,7 +249,7 @@ namespace N1ShittyCommands.Commands
         [ReflectedGetter(Name = "m_stations", Type = typeof(MyFaction))]
         private static Func<MyFaction, Dictionary<long, MyStation>> _stations;
 
-        private void RemoveStation(List<MyFaction> removeStationList)
+        private static void RemoveStation(List<MyFaction> removeStationList)
         {
             var factionList = MySession.Static.Factions.Select(x => x.Value).ToList();
 
