@@ -4,12 +4,10 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Multiplayer;
 using Sandbox.Game.SessionComponents;
 using Sandbox.Game.World;
-using Sandbox.Game.World.Generator;
 using Sandbox.ModAPI;
 using Torch.Commands;
 using Torch.Commands.Permissions;
@@ -53,15 +51,13 @@ namespace N1ShittyCommands.Commands
             var removedFactions = removeList.Count;
             RemoveStations(meh,removeList,true);
 
-            CleanupReputations();
-
             _genFacOnStart.Invoke(meh, true);
             meh.BeforeStart();
             Context.Respond($"Cleared {removedFactions} factions \n Faction reset complete");
         }
 
 
-        [Command("reset station", "removes all NPC trade stations and reset faction to spawn new ones.  This will also increase NPC factions if maxfactioncount is set to 0 in world setting")]
+        [Command("reset station", "removes all NPC trade stations and reset faction to spawn new ones")]
         [Permission(MyPromoteLevel.Admin)]
         public void StationReset(string factionTag = null)
         {
@@ -90,7 +86,7 @@ namespace N1ShittyCommands.Commands
                 var newFactionCreated = new List<MyFaction>();
                 foreach (var (id, faction) in MySession.Static.Factions)
                 {
-                    if (removeStationList.Contains(faction)) continue;
+                    if (factionList.Contains(faction)) continue;
                     newFactionCreated.Add(faction);
                 }
                 foreach (var faction in newFactionCreated)
@@ -131,8 +127,8 @@ namespace N1ShittyCommands.Commands
             }
 
             RemoveStation(removeStationList);
-            CleanupReputations();
-
+            
+            //Cleanup safezones of deleted stations using position.
             var safeZones = new HashSet<MySafeZone>(MySessionComponentSafeZones.SafeZones);
             var delSafeZones = new List<MySafeZone>();
             foreach (var zone in safeZones)
@@ -153,12 +149,18 @@ namespace N1ShittyCommands.Commands
                 zone.Close();
             }
 
-            if (!deleteFaction) return removedStations;
+            if (!deleteFaction)
+            {
+                CleanupReputations();
+                return removedStations;
+            }
 
             foreach (var faction in factionList)
             {
                 RemoveFaction(faction);
             }
+
+            CleanupReputations();
             return removedStations;
         }
 

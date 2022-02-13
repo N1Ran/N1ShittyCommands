@@ -15,6 +15,7 @@ using VRage.Library.Utils;
 
 namespace N1ShittyCommands.Commands
 {
+    #if DEBUG
     [Category("settings")]
     public class Settings : CommandModule
     {
@@ -253,4 +254,5 @@ namespace N1ShittyCommands.Commands
             return args.Length == 0 ? MyTexts.GetString(stringId) : string.Format(MyTexts.GetString(stringId), args);
         }
     }
+#endif
 }

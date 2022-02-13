@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Screens.Helpers;
 using Sandbox.Game.World;
@@ -27,9 +28,14 @@ namespace N1ShittyCommands.Commands
                 Context.Respond("No safe zone found");
                 return;
             }
-            var safeZoneList = string.Join("\n", safeZones.Select(x => $"{x.DisplayName}({x.EntityId})"));
 
-            Context.Respond(safeZoneList);
+            var respond = new StringBuilder();
+
+            respond.AppendLine($"Found {safeZones.Count}:");
+            respond.Append(string.Join("\n", safeZones.Select(x => $"{x.DisplayName} - ({x.EntityId})")));
+            //var safeZoneList = string.Join("\n", safeZones.Select(x => $"{x.DisplayName}({x.EntityId})"));
+
+            Context.Respond(respond.ToString());
         }
 
         [Command("locate", "Lists current safe zones")]

@@ -18,7 +18,6 @@ using VRage.Game.Definitions.SessionComponents;
 using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Components;
 
-#if DEBUG
 
 namespace N1ShittyCommands.Commands
 {
@@ -26,9 +25,25 @@ namespace N1ShittyCommands.Commands
     [Category("player")]
     public class PlayerModule : CommandModule
     {
+        [Command("reset container", "resets playercontainerdata so Unknown Signals can be re-enabled")]
+        public void ResetContainer()
+        {
+            if (!(MySession.Static.GetComponent<MySessionComponentContainerDropSystem>().GetObjectBuilder() is MyObjectBuilder_SessionComponentContainerDropSystem containerDropSystem))
+            {
+                Context.Respond("DropSys is null");
+                return;
+            }
 
+            var result = 0;
+            foreach (var data in containerDropSystem.PlayerData)
+            {
+                if (data.Active || MyEntities.TryGetEntityById(data.ContainerId, out _)) continue;
+                data.Active = true;
+                result++;
+            }
+            Context.Respond($"Reset {result} player container data");
+        }
     }
     
 }
-#endif
 
