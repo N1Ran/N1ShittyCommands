@@ -12,6 +12,7 @@ using VRage.Game;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRageMath;
+using System.Text.RegularExpressions;
 
 namespace N1ShittyCommands.Commands
 {
@@ -116,9 +117,13 @@ namespace N1ShittyCommands.Commands
                 return;
             }
             var removed = 0;
+
+            var _deletedList = new List<string>();
+
             foreach (var safeZone in safeZones)
             {
-                if (!safeZone.DisplayName.Contains(name,StringComparison.OrdinalIgnoreCase)) continue;
+                if (!Regex.IsMatch(safeZone.DisplayName, name, RegexOptions.IgnoreCase)) continue;
+                _deletedList.Add(safeZone.DisplayName);
                 safeZone.Close();
                 removed++;
             }
@@ -128,8 +133,11 @@ namespace N1ShittyCommands.Commands
                 Context.Respond($"no safe zone containing name {name} found");
                 return;
             }
+            var respond = new StringBuilder();
+            respond.AppendLine($"Removed {removed} safe zones");
+            respond.Append(string.Join("\n", _deletedList));
+            Context.Respond(respond.ToString());
 
-            Context.Respond($"Removed {removed} safe zones");
         }
 
 

@@ -256,7 +256,7 @@ namespace N1ShittyCommands.Commands
             var factionList = MySession.Static.Factions.Select(x => x.Value).ToList();
 
             foreach (var faction in factionList)
-            { 
+            {
                 if (!removeStationList.Contains(faction)) continue;
                  _stations(faction).Clear();
             }

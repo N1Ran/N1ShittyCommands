@@ -37,7 +37,9 @@ namespace N1ShittyCommands.Commands
             var result = 0;
             foreach (var data in containerDropSystem.PlayerData)
             {
-                if (data.Active || MyEntities.TryGetEntityById(data.ContainerId, out _)) continue;
+                if (data.Active || MyEntities.TryGetEntityById(data.ContainerId, out var container)) continue;
+                container.Close();
+                //ToDo Add gps clearing.
                 data.Active = true;
                 result++;
             }

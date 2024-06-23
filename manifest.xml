@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<PluginManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Name>N1ShittyCommands</Name>
+  <Guid>5F3933A1-2F00-48FF-9AB8-C0651B570174</Guid>
+  <Repository>N1ShittyCommands</Repository>
+  <Version>v1.0.300</Version>
+</PluginManifest>
