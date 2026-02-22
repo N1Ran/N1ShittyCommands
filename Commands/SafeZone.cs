@@ -70,28 +70,9 @@ namespace N1ShittyCommands.Commands
         [Command("clear", "removes empty safezones")]
         public void RemoveSafeZones()
         {
-            var safeZones = new HashSet<MySafeZone>(MySessionComponentSafeZones.SafeZones);
-            //Blame the shittiness of this code on keen for having a shitty empty bool.
-            var allGrids = new List<MyEntity>(MyEntities.GetEntities().OfType<MyCubeGrid>());
-            var occupiedSpace = new List<MyOrientedBoundingBoxD>();
-            foreach (var entity in allGrids)
-            {
-                occupiedSpace.Add(new MyOrientedBoundingBoxD(entity.PositionComp.LocalAABB,
-                    entity.PositionComp.WorldMatrixRef));
-            }
+            var removed = Utility.Utilities.ClearSafeZones();
 
-            var removed = 0;
-            foreach (var safeZone in safeZones)
-            {
-                var zonePosition =
-                    new MyOrientedBoundingBoxD(safeZone.PositionComp.LocalAABB, safeZone.PositionComp.WorldMatrixRef);
-
-                if (!safeZone.IsEmpty() || (occupiedSpace.Count > 0 && occupiedSpace.Any(x=>x.Intersects(ref zonePosition))) ) continue;
-                safeZone.Close();
-                removed++;
-            }
-
-            Context.Respond($"Cleared {removed} safezone");
+			Context.Respond($"Cleared {removed} safezone");
         }
 
         [Command("delete", "deletes safe zone by matching name")]

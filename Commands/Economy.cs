@@ -46,14 +46,16 @@ namespace N1ShittyCommands.Commands
             var factionList = MySession.Static.Factions.Select(x => x.Value).ToList();
             if (!string.IsNullOrEmpty(factionTag))
                 factionList.RemoveAll(x => !x.Tag.Equals(factionTag, StringComparison.OrdinalIgnoreCase));
-            var removeList = new List<MyFaction>(factionList.Where(faction => faction.IsEveryoneNpc() && faction.FactionType != MyFactionTypes.PlayerMade && faction.FactionType != MyFactionTypes.None));
+            var removeList = new List<MyFaction>(factionList.Where(faction => faction.IsEveryoneNpc() && !faction.AcceptHumans));
 
             var removedFactions = removeList.Count;
             RemoveStations(meh,removeList,true);
 
             _genFacOnStart.Invoke(meh, true);
             meh.BeforeStart();
-            Context.Respond($"Cleared {removedFactions} factions \n Faction reset complete");
+			Utility.Utilities.ClearSafeZones();
+
+			Context.Respond($"Cleared {removedFactions} factions \n Faction reset complete");
         }
 
 
@@ -61,9 +63,9 @@ namespace N1ShittyCommands.Commands
         [Permission(MyPromoteLevel.Admin)]
         public void StationReset(string factionTag = null)
         {
-            var meh = MySession.Static.GetComponent<MySessionComponentEconomy>();
+            var economy = MySession.Static.GetComponent<MySessionComponentEconomy>();
 
-            if (meh == null)
+            if (economy == null)
             {
                 Context.Respond("Can't find MySessionComponentEconomy");
                 return;
@@ -74,29 +76,33 @@ namespace N1ShittyCommands.Commands
                 factionList.RemoveAll(x => x.Tag.Equals(factionTag, StringComparison.OrdinalIgnoreCase));
 
             var removedStations = 0;
-            var removeStationList = new List<MyFaction>(factionList.Where(faction => faction.IsEveryoneNpc() && faction.FactionType != MyFactionTypes.PlayerMade && faction.FactionType != MyFactionTypes.None));
+            var removeStationList = new List<MyFaction>(factionList.Where(faction => faction.IsEveryoneNpc() && !faction.AcceptHumans));
 
-            removedStations = RemoveStations(meh, removeStationList);
+            removedStations = RemoveStations(economy, removeStationList);
 
-            _genFacOnStart.Invoke(meh, true);
-            meh.BeforeStart();
-            Task.Run(() =>
-            {
-                Thread.Sleep(100);
-                var newFactionCreated = new List<MyFaction>();
-                foreach (var (id, faction) in MySession.Static.Factions)
-                {
-                    if (factionList.Contains(faction)) continue;
-                    newFactionCreated.Add(faction);
-                }
-                foreach (var faction in newFactionCreated)
-                {
-                    RemoveFaction(faction);
-                }
+            _genFacOnStart.Invoke(economy, true);
+			economy.BeforeStart();
+            //This crashes the server.  
+            //Task.Run(() =>
+            //{
+            //    Thread.Sleep(100);
+            //    var newFactionCreated = new List<MyFaction>();
+            //    foreach (var (id, faction) in MySession.Static.Factions)
+            //    {
+            //        if (factionList.Contains(faction)) continue;
+            //        newFactionCreated.Add(faction);
+            //    }
+            //    foreach (var faction in newFactionCreated)
+            //    {
+            //        RemoveFaction(faction);
+            //    }
                 
                 
-            });
-            Context.Respond($"Cleared {removedStations} stations \n Station reset complete");
+            //});
+            var safeZoneCleared = Utility.Utilities.ClearSafeZones();
+
+			Context.Respond($"Cleared {removedStations} stations \n Station reset complete \n " +
+                $"{safeZoneCleared} empty safezones cleared");
 
         }
 
@@ -157,6 +163,7 @@ namespace N1ShittyCommands.Commands
 
             foreach (var faction in factionList)
             {
+
                 RemoveFaction(faction);
             }
 
