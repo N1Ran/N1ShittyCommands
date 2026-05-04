@@ -256,7 +256,7 @@ namespace N1ShittyCommands.Commands
         }
 
         [ReflectedGetter(Name = "m_stations", Type = typeof(MyFaction))]
-        private static Func<MyFaction, Dictionary<long, MyStation>> _stations;
+        private static Func<MyFaction, Dictionary<long, MyFactionStation>> _stations;
 
         private static void RemoveStation(List<MyFaction> removeStationList)
         {
