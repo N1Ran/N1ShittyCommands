@@ -32,7 +32,7 @@ namespace N1ShittyCommands.Commands
 			Context.Respond($"Cleaned up {count} reputaion.");
         }
 
-        [Command("resetplayer", "resets player's NPC reputation pairt to default")]
+        [Command("resetplayer", "resets player's NPC reputation pair to default")]
 		[Permission(MyPromoteLevel.Moderator)]
 		public void ResetPlayer(string playerName = null)
         {
@@ -42,11 +42,8 @@ namespace N1ShittyCommands.Commands
                 Context.Respond($"Player {playerName} not found.");
                 return;
             }
-            foreach (var faction in MySession.Static.Factions.GetNpcFactions())
-            {
-                if (faction == null) continue;
-                Utility.Reputation.ResetPlayerToFaction(playerIdentity.IdentityId, faction.FactionId);
-			}
+            var count = Utility.Reputation.ResetPlayerReputation(playerIdentity.IdentityId);
+			Context.Respond($"Reset {playerIdentity.DisplayName}'s reputation with {count} factions.");
 		}
     }
 }
